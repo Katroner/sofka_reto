@@ -1,5 +1,5 @@
 import random
-from connection import Connection
+from .connection import Connection
 
 
 class Question:
@@ -17,9 +17,9 @@ class Question:
     # Getters
     def __get_question(self) -> str:
         return self.__question
-    
+
     def __get_asnwers(self) -> list:
-        return random.shuffle(self.__answers)
+        return self.__answers
 
     def __get_error(self) -> str:
         return self.__error
@@ -36,9 +36,11 @@ class Question:
 
     # Private methods
     def __validate(self) -> bool:
-        if self.__n_round > 0 or self.__n_round <= 5:
+        if self.__n_round < 0 or self.__n_round > 5:
             self.__error = "Invalid round number"
             return False
+
+        return True
 
     def __fill_categories(self) -> None:
         try:
@@ -68,7 +70,7 @@ class Question:
         try:
             conn = Connection()
             self.__questions = conn.select(
-                "SELECT question FROM Questions WHERE idCategory = ?;", (self.__category[0],))
+                "SELECT idQuestion, question FROM Questions WHERE idCategory = ?;", (self.__category[0],))
 
             self.__categories = [category[0] for category in self.__categories]
 
@@ -76,8 +78,17 @@ class Question:
             self.__error = conn.error
 
     def __answers_by_question(self) -> None:
-        # * TODO: Get answers from database 
-        pass
+        try:
+            conn = Connection()
+            self.__answers = conn.select(
+                "SELECT answer, estate FROM Answers WHERE idQuestion = ?;", (self.__question[0],))
+
+            for answer in self.__answers:
+                if answer[1] == 1:
+                    self.__right_answer = answer[0]
+
+        except Exception:
+            self.__error = conn.error
 
     # Public methods
     def make_question(self) -> None:
@@ -88,11 +99,12 @@ class Question:
             self.__fill_categories()
             self.__actual_category()
             self.__questions_by_category()
-            self.__questions = [question[0] for question in self.__questions]
 
             self.__question = random.choice(self.__questions)
 
-            # self.__answers_by_question()
+            self.__answers_by_question()
+            self.__question = self.__question[1]
+            self.__answers = [answer[0] for answer in self.__answers]
 
         except Exception as e:
             self.__error = e
