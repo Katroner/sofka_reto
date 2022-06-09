@@ -1,7 +1,9 @@
 import random
+from connection import Connection
 
 
 class Question:
+    # Constructor
     def __init__(self) -> None:
         self.__n_round = 0
         self.__answers = []
@@ -13,30 +15,38 @@ class Question:
         self.__error = ""
 
     # Getters
-    def get_asnwers(self) -> list:
-        self.__answers.append(self.__right_answer)
+    def __get_question(self) -> str:
+        return self.__question
+    
+    def __get_asnwers(self) -> list:
         return random.shuffle(self.__answers)
 
-    def get_error(self) -> str:
+    def __get_error(self) -> str:
         return self.__error
 
     # Setters
-    def set_n_round(self, n_round: int) -> None:
+    def __set_n_round(self, n_round: int) -> None:
         self.__n_round = n_round
 
     # Properties
-    answers = property(get_asnwers)
-    n_round = property(fset=set_n_round)
-    error = property(get_error)
+    question = property(__get_question)
+    answers = property(__get_asnwers)
+    n_round = property(fset=__set_n_round)
+    error = property(__get_error)
 
     # Private methods
     def __validate(self) -> bool:
-        if self.__n_round <= 0 or self.__n_round > 5:
+        if self.__n_round > 0 or self.__n_round <= 5:
             self.__error = "Invalid round number"
             return False
 
     def __fill_categories(self) -> None:
-        pass
+        try:
+            conn = Connection()
+            self.__categories = conn.select("SELECT * FROM Categories;")
+
+        except Exception:
+            self.__error = conn.error
 
     def __actual_category(self) -> None:
         if self.__n_round == 1:
@@ -55,9 +65,18 @@ class Question:
             self.__category = self.__categories[4]
 
     def __questions_by_category(self) -> None:
-        pass
+        try:
+            conn = Connection()
+            self.__questions = conn.select(
+                "SELECT question FROM Questions WHERE idCategory = ?;", (self.__category[0],))
+
+            self.__categories = [category[0] for category in self.__categories]
+
+        except Exception:
+            self.__error = conn.error
 
     def __answers_by_question(self) -> None:
+        # * TODO: Get answers from database 
         pass
 
     # Public methods
@@ -69,10 +88,11 @@ class Question:
             self.__fill_categories()
             self.__actual_category()
             self.__questions_by_category()
+            self.__questions = [question[0] for question in self.__questions]
 
-            self.question = random.choice(self.__questions)
+            self.__question = random.choice(self.__questions)
 
-            self.__answers_by_question()
+            # self.__answers_by_question()
 
         except Exception as e:
             self.__error = e

@@ -2,23 +2,29 @@ import sqlite3
 
 
 class Connection:
+    # Constructor
     def __init__(self) -> None:
         self.__error = ""
         self.__data = []
 
     # Getters
-    def get_error(self) -> str:
+    def __get_error(self) -> str:
         return self.__error
 
     # Properties
-    error = property(get_error)
+    error = property(__get_error)
 
     # Public methods
-    def select(self, query: str) -> list:
+    def select(self, query: str, data: tuple = None) -> list:
         try:
-            with sqlite3.connect("/db/questions.db") as conn:
+            with sqlite3.connect("./db/questions.db") as conn:
                 cursor = conn.cursor()
-                cursor.execute(query)
+                if data is None:
+                    cursor.execute(query)
+
+                else:
+                    cursor.execute(query, data)
+
                 self.__data = cursor.fetchall()
 
                 return self.__data
@@ -28,7 +34,7 @@ class Connection:
 
     def upload_insert(self, query: str, data: tuple) -> None:
         try:
-            with sqlite3.connect("/db/questions.db") as conn:
+            with sqlite3.connect("./db/questions.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute(query, data)
                 conn.commit()
